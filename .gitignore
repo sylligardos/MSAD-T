@@ -1,7 +1,7 @@
 # Project-specific ignores
-data
-models
-experiments
+/data
+/models
+/experiments
 .vscode
 *.zip
 reports/

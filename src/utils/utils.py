@@ -701,16 +701,21 @@ def compute_temporal_score(curr_scores, probs, indices, window_size):
 	if len(probs) != len(indices):
 		raise ValueError("Segments' probabilities and indices should have the same length")
 	
-	# Setup
-	comb_score = np.copy(curr_scores)
+	prob_mask = np.ones(curr_scores.shape) # * -1
+	for i in range(len(indices)):
+		if i < len(indices)-1:
+			prob_mask[indices[i]:indices[i + 1]] = probs[i]
+		else:
+			prob_mask[indices[i]:] = probs[i]
+	# sns.lineplot(prob_mask)
+	# plt.show()
 
-	# Combine score
-	for i, prob in zip(indices, probs):
-		comb_score[i:i + window_size, :] = comb_score[i:i + window_size, :] * prob
-
+	comb_score = curr_scores * prob_mask
+	# plot_time_series_grid(comb_score)
+	
 	# Sum the 12 weighted scores	
 	final_score = np.sum(comb_score, axis=1)
-	
+
 	return final_score
 
 

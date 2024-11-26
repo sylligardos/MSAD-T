@@ -168,7 +168,7 @@ if __name__ == "__main__":
 	window_size = 128
 	step = window_size//2
 	model_name = 'convnet'
-	datasets_to_process = ['YAHOO']
+	datasets_to_process = None
 	results_dir = "experiments/25_11_2024"
 	flag_visualize_results = False
 	testing = False

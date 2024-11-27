@@ -110,7 +110,7 @@ def process_timeseries(args):
 	# Get predictions
 	data = torch.from_numpy(x_seg[:, np.newaxis]).to(device)
 	pred = model(data.float())
-	probs = tensor_softmax(pred).detach().numpy()
+	probs = tensor_softmax(pred).cpu().detach().numpy()
 
 	# Compute temporal score
 	combined_score, prob_mask = compute_temporal_score(curr_scores, probs, indices, window_size)
@@ -171,7 +171,7 @@ if __name__ == "__main__":
 	window_size = args.window_size
 	step = args.step
 	model_name = args.model_name
-	datasets_to_process = "YAHOO"
+	datasets_to_process = None
 	results_dir = "experiments/25_11_2024"
 	flag_visualize_results = False
 	testing = False

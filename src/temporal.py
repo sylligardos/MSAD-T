@@ -83,7 +83,7 @@ def main(
 	
 	# Inference the dataset
 	results = []
-	for arg in tqdm(args, desc="Inference"):
+	for arg in tqdm(args, desc=f"Inference on {device}"):
 		result = process_timeseries(arg)
 		results.append(result)
 

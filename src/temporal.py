@@ -6,13 +6,14 @@
 """
 
 
-from utils.utils import load_anomaly_scores, load_model, plot_signal_with_anomalies, detect_boundaries, compute_temporal_score, compute_metrics
+from utils.utils import load_anomaly_scores, load_model, plot_signal_with_anomalies, wrapper_get_metrics, compute_temporal_score, compute_metrics
 from data.scoreloader import Scoreloader
 from data.metricloader import Metricloader
 from data.dataloader import Dataloader
 from utils.norm import z_normalization
 from utils.split_ts import split_ts
 
+import argparse
 from tqdm import tqdm
 import os
 from scipy.stats import entropy
@@ -41,9 +42,11 @@ def main(
 	
 	# Read the raw time series, anomalies
 	dataloader = Dataloader(raw_data_path='data/raw', split_file=f'data/splits/supervised/split_TSB_{window_size}.csv')
-	timeseries, anomalies, fnames = dataloader.load_raw_datasets(dataloader.get_dataset_names() if datasets_to_process is None else datasets_to_process, split='val')
+	timeseries, anomalies, fnames = dataloader.load_raw_datasets(
+		dataloader.get_dataset_names() if datasets_to_process is None else datasets_to_process, split='val'
+	)
 	
-	# Uncomment for testing
+	# For testing
 	if testing:
 		random_choices = np.random.choice(np.arange(0, len(timeseries)), size=10, replace=False)
 		timeseries = [timeseries[x] for x in random_choices]
@@ -72,103 +75,104 @@ def main(
 	)
 	model.eval()
 	model.to(device)
+
+	# Prepare args
+	args = [
+		(x, y, detectors_df, fname, model, tensor_softmax, device, curr_scores, scores_saving_dir, detectors, flag_visualize_results)
+		for (x, y, fname, curr_scores) in zip(timeseries, anomalies, fnames, scores)
+	]
 	
 	# Inference the dataset
 	results = []
-	for i, (x, y, fname, curr_scores) in tqdm(enumerate(zip(timeseries, anomalies, fnames, scores)), desc='Processing ts', total=len(fnames)):
-		curr_label = detectors_df.loc[fname].idxmax()
-		curr_df = pd.DataFrame(detectors_df.loc[fname])
-		curr_dataset = fname.split('/')[0]
-
-		# Normalize time series
-		x = z_normalization(x)
-
-		# Split time series
-		x_seg, indices = split_ts(x, window_size, step=step)
-		new_x_axis = np.linspace(0, len(x)/(len(x)/len(x_seg)), len(x)) # used for plotting
-
-		# Get predictions
-		data = torch.from_numpy(x_seg[:, np.newaxis]).to(device)
-		pred = model(data.float())
-		probs = tensor_softmax(pred).detach().numpy()
-
-		# Compute temporal score
-		combined_score = compute_temporal_score(curr_scores, probs, indices, window_size)
-		if not os.path.exists(os.path.join(scores_saving_dir, curr_dataset)):
-			os.makedirs(os.path.join(scores_saving_dir, curr_dataset))
-		np.savetxt(os.path.join(results_dir, 'scores', f"{model_name}_{window_size}_{step}", f"{fname}.csv"), combined_score, delimiter=",")
-
-		# Compute AUC-PR of combined score
-		curr_metrics = compute_metrics([y], combined_score[np.newaxis, :], k=None)[0]
-		
-		# Save results
-		results.append({
-			"Time series": fname,
-			"Dataset": curr_dataset,
-		} | curr_metrics)
-		
-		if flag_visualize_results:
-			# Find out significant probs regions :D (Not used currently)
-			boundaries, bad_regions = detect_boundaries(probs, threshold=0.5)
-
-			# Find most predicted detector (MVP)
-			mean_probs = probs.mean(axis=0)
-			top_k_detectors = np.argsort(mean_probs)[-3:]
-
-			# Compute entropy of probabilities per window
-			ent = entropy(probs, axis=1)
-
-			# Plot results
-			fig, ax = plt.subplots(4, 1, figsize=(10, 10), sharex=True)
-			
-			plot_signal_with_anomalies(x, y, x_axis=new_x_axis, title=None, ax=ax[0])
-			# ax[0].set_xlim(0, len(x)-1)
-			ax[0].set_title(f'{fname}')
-
-			sns.heatmap(
-				probs.T, 
-				cbar=False, 
-				yticklabels=detectors, 
-				ax=ax[1]
-			)
-			ax[1].set_title(f'Probabilities')
-			
-			# bad_regions_y = [boundaries[x] for x in bad_regions]
-			sns.scatterplot(boundaries, ax=ax[2])
-			sns.scatterplot(x=bad_regions, y=[boundaries[x] for x in bad_regions], ax=ax[2], color='red')
-			ax[2].set_xlim(0, len(probs) - 1)
-			ax[2].set_yticks(ticks=np.arange(0, len(detectors)), labels=detectors)
-			ax[2].set_title('Decision boundaries')
-			ax[2].invert_yaxis()
-			ax[2].grid(axis='y')
-
-			for j in top_k_detectors:
-				ax[3].plot(new_x_axis, curr_scores[:, j], label=f"{detectors[j]}", alpha=0.5)
-			ax[3].legend()
-			# ax[3].set_xlim(0, len(x)-1)
-			ax[3].set_ylim(0, 1)
-			ax[3].set_title("MVP's scores")
-			# ax[3].set_xticks(ticks=[])
-			
-			# To print
-			pd.set_option('display.float_format', '{:.3f}'.format)
-			curr_df.columns = ['Score']
-			curr_df['Probability'] = mean_probs
-
-			plt.suptitle(f'Best detector {curr_label}; Predicted {detectors[mean_probs.argmax()]}')
-			plt.tight_layout()
-			plt.show()
+	for arg in tqdm(args, desc="Inference"):
+		result = process_timeseries(arg)
+		results.append(result)
 
 	final_df = pd.DataFrame(results).set_index('Time series')
 	saving_path = os.path.join(results_dir, "results", f"{model_name}_{window_size}_{step}.csv")
 	final_df.to_csv(saving_path)
 
+
+def process_timeseries(args):
+	# Unbox args
+	x, y, detectors_df, fname, model, tensor_softmax, device, curr_scores, scores_saving_dir, detectors, flag_visualize_results = args
+	
+	curr_label = detectors_df.loc[fname].idxmax()
+	curr_df = pd.DataFrame(detectors_df.loc[fname])
+	curr_dataset = fname.split('/')[0]
+
+	# Normalize time series
+	x = z_normalization(x)
+
+	# Split time series
+	x_seg, indices = split_ts(x, window_size, step=step)
+	new_x_axis = np.linspace(0, len(x)/(len(x)/len(x_seg)), len(x)) # used for plotting
+
+	# Get predictions
+	data = torch.from_numpy(x_seg[:, np.newaxis]).to(device)
+	pred = model(data.float())
+	probs = tensor_softmax(pred).detach().numpy()
+
+	# Compute temporal score
+	combined_score, prob_mask = compute_temporal_score(curr_scores, probs, indices, window_size)
+	if not os.path.exists(os.path.join(scores_saving_dir, curr_dataset)):
+		os.makedirs(os.path.join(scores_saving_dir, curr_dataset))
+	np.savetxt(os.path.join(results_dir, 'scores', f"{model_name}_{window_size}_{step}", f"{fname}.csv"), combined_score, delimiter=",")
+
+	# Compute AUC-PR of combined score
+	curr_metrics = wrapper_get_metrics((combined_score, y))
+	
+	# Save results
+	result = {
+		"Time series": fname,
+		"Dataset": curr_dataset,
+	} | curr_metrics
+	
+	# Plot results
+	if flag_visualize_results:
+		fig, ax = plt.subplots(4, 1, figsize=(10, 10), sharex=True)
+		
+		plot_signal_with_anomalies(x, y, x_axis=new_x_axis, title=None, ax=ax[0])
+		ax[0].set_title(f'{fname}')
+
+		sns.heatmap(
+			probs.T, 
+			cbar=False, 
+			yticklabels=detectors, 
+			ax=ax[1],
+		)
+		ax[1].set_title('Probabilities')
+		
+		for i, detector_name in enumerate(detectors):
+			sns.lineplot(x=new_x_axis, y=prob_mask[:, i], ax=ax[2], label=f"{detector_name}: {curr_df.loc[detector_name].values[0]:.2f}")
+		ax[2].set_title('Probabilities mask')
+		ax[2].grid(axis='y')
+		ax[2].legend(title="Detectors", ncol=2)
+
+		sns.lineplot(x=new_x_axis, y=combined_score, ax=ax[3])
+		ax[3].set_xticks([])
+		ax[3].set_title(f'Combine score; AUC-PR: {curr_metrics['AUC-PR']:.2f}')
+
+		plt.suptitle(f'Best detector {curr_label}')
+		plt.tight_layout()
+		plt.show()
+
+	return result
+
 if __name__ == "__main__":
+	# CMD-line arguments
+	parser = argparse.ArgumentParser(description="Run MSAD-T experiments")
+	parser.add_argument('--model_name', type=str, required=True, help='Name of the model to use')
+	parser.add_argument('--window_size', type=int, required=True, help='Window size to segment time series')
+	parser.add_argument('--step', type=int, required=True, help='Step of the window (can be overlapping or not)')
+
+	args = parser.parse_args()
+
 	# Experiment's parameters
-	window_size = 128
-	step = window_size//2
-	model_name = 'convnet'
-	datasets_to_process = None
+	window_size = args.window_size
+	step = args.step
+	model_name = args.model_name
+	datasets_to_process = "YAHOO"
 	results_dir = "experiments/25_11_2024"
 	flag_visualize_results = False
 	testing = False

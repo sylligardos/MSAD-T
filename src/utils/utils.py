@@ -716,7 +716,7 @@ def compute_temporal_score(curr_scores, probs, indices, window_size):
 	# Sum the 12 weighted scores	
 	final_score = np.sum(comb_score, axis=1)
 
-	return final_score
+	return final_score, prob_mask
 
 
 def plot_time_series_grid(data):

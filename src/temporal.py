@@ -90,7 +90,8 @@ def main(
 		# Get predictions
 		data = torch.from_numpy(x_seg[:, np.newaxis]).to(device)
 		pred = model(data.float())
-		probs = tensor_softmax(pred).detach().numpy()
+		# probs = tensor_softmax(pred).detach().numpy()
+		probs = tensor_softmax(pred).detach().cpu().numpy()
 
 		# Compute temporal score
 		combined_score = compute_temporal_score(curr_scores, probs, indices, window_size)

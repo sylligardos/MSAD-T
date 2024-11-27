@@ -83,7 +83,7 @@ def main(
 	
 	# Inference the dataset
 	results = []
-	for arg in tqdm(args, desc="Inference"):
+	for arg in tqdm(args, desc=f"Inference on {device}"):
 		result = process_timeseries(arg)
 		results.append(result)
 
@@ -171,7 +171,7 @@ if __name__ == "__main__":
 	window_size = args.window_size
 	step = args.step
 	model_name = args.model_name
-	datasets_to_process = "YAHOO"
+	datasets_to_process = None
 	results_dir = "experiments/25_11_2024"
 	flag_visualize_results = False
 	testing = False

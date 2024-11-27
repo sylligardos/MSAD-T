@@ -94,8 +94,9 @@ class Dataloader:
 
 		files = self.check_split(files, split) if split else files
 		
+		print(f'Selected dataset: {datasets}')
 		with Pool(njobs) as pool:
-			results = list(tqdm(pool.imap(self.load_timeseries, files), total=len(files), desc=f"Loading {datasets}"))
+			results = list(tqdm(pool.imap(self.load_timeseries, files), total=len(files), desc=f"Loading data"))
 
 		x, y, fnames = zip(*[result for result in results if result is not None])
 

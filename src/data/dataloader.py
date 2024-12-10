@@ -209,6 +209,101 @@ class Dataloader:
 		df = df.filter(like=dataset, axis=0)
 		
 		return df
+	
+	def load_feature_datasets(self, datasets):
+		if len(datasets) == 1:
+			return self.load_feature_timeseries(datasets[0])
+		else:
+			df_list = []
+			for dataset in tqdm(datasets, desc="Loading datasets", unit="dataset"):
+				df_list.append(self.load_feature_timeseries(dataset))
+			return pd.concat(df_list)
+		
+	def load_feature_all(self):
+		return pd.read_csv(self.feature_data_path, index_col=0)
+		
+
+	def create_splits(data_path, split_per=0.7, seed=None, read_from_file=None):
+		"""Creates the splits of a single dataset to train, val, test subsets.
+		This is done either randomly, or with a seed, or read the split from a
+		file. Please see such files (the ones we used for our experiments) in 
+		the directory "experiments/supervised_splits" or 
+		"experiments/unsupervised_splits".
+
+		Note: The test set will be created only when reading the splits
+			from a file, otherwise only the train, val set are generated.
+			The train, val subsets share the same datasets/domains. 
+			The test sets that we used in the unsupervised experiments 
+			do not (thus the supervised, unsupervised notation).
+
+		:param data_path: path to the initial dataset to be split
+		:param split_per: the percentage in which to create the splits
+			(skipped when read_from_file)
+		:param seed: the seed to use to create the 'random' splits
+			(we strongly advise you to use small numbers)
+		:param read_from_file: file to read fixed splits from
+
+		:return train_set: list of strings of time series file names
+		:return val_set: list of strings of time series file names
+		:return test_set: list of strings of time series file names
+		"""
+		train_set = []
+		val_set = []
+		test_set = []
+		dir_path = data_path
+		
+		# Set seed if provided
+		if seed: 
+			np.random.seed(seed)
+
+		# Read splits from file if provided
+		if read_from_file is not None:
+			df = pd.read_csv(read_from_file, index_col=0)
+			subsets = list(df.index)
+			
+			if 'train_set' in subsets and 'val_set' in subsets:
+				train_set = [x for x in df.loc['train_set'].tolist() if not isinstance(x, float) or not math.isnan(x)]
+				val_set = [x for x in df.loc['val_set'].tolist() if not isinstance(x, float) or not math.isnan(x)]
+
+				return train_set, val_set, test_set
+			elif 'train_set' in subsets and 'test_set' in subsets:
+				train_val_set = [x for x in df.loc['train_set'].tolist() if not isinstance(x, float) or not math.isnan(x)]
+				test_set = [x for x in df.loc['test_set'].tolist() if not isinstance(x, float) or not math.isnan(x)]
+
+				datasets = list(set([x.split('/')[0] for x in train_val_set]))
+				datasets.sort()
+			else:
+				raise ValueError('Did not expect this type of file.')
+		else:
+			datasets = [x for x in os.listdir(dir_path) if os.path.isdir(os.path.join(dir_path, x))]
+			datasets.sort()
+
+		if not os.path.isdir(dir_path):
+			dir_path = '/'.join(dir_path.split('/')[:-1])
+		
+		# Random split of train & val sets
+		for dataset in datasets:
+			# Read file names
+			fnames = os.listdir(os.path.join(dir_path, dataset))
+
+			# Decide on the size of each subset
+			n_timeseries = len(fnames)
+			train_split = math.ceil(n_timeseries * split_per)
+			val_split = n_timeseries - train_split
+
+			# Select random files for each subset
+			train_idx = np.random.choice(
+				np.arange(n_timeseries), 
+				size=train_split, 
+				replace=False
+			)
+			val_idx = np.asarray([x for x in range(n_timeseries) if x not in train_idx])
+
+			# Replace indexes with file names
+			train_set.extend([os.path.join(dataset, fnames[x]) for x in train_idx])
+			val_set.extend([os.path.join(dataset, fnames[x]) for x in val_idx])
+		
+		return train_set, val_set, test_set
 
 
 def load_csv(file_path):

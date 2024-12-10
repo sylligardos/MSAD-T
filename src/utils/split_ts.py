@@ -10,8 +10,9 @@
 ########################################################################
 
 
-import math
 import numpy as np
+from sklearn.model_selection import train_test_split
+from collections import Counter
 import pandas as pd
 
 
@@ -98,5 +99,17 @@ def split_ts_no_overlap(data, window_size):
 
 	return np.asarray(data_split), indices
 
+def my_train_test_split(data, stratify=False, test_size=0.33, random_state=None):
+	unique_index = list({'.'.join(id.rsplit('.', maxsplit=1)[:-1]) for id in data.index})
 
+	if stratify:
+		dataset_index = [id.split('/', maxsplit=1)[0] for id in unique_index]
+		train, test = train_test_split(unique_index, stratify=dataset_index, test_size=test_size, random_state=random_state)
+	else:
+		train, test = train_test_split(unique_index, test_size=test_size, random_state=random_state)
+
+	train_set = data[data.index.to_series().apply(lambda idx: '.'.join(idx.rsplit('.', maxsplit=1)[:-1]) in train)]
+	test_set = data[data.index.to_series().apply(lambda idx: '.'.join(idx.rsplit('.', maxsplit=1)[:-1]) in test)]
+
+	return train_set, test_set
 

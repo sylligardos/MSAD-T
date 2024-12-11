@@ -41,6 +41,7 @@ class SignalTransformer(nn.Module):
 		cls_head=False,
 		num_classes=12,
 		representation_size=None,
+		regression=False,
 	):
 
 		super(SignalTransformer, self).__init__()
@@ -91,6 +92,7 @@ class SignalTransformer(nn.Module):
 			num_classes=num_classes,
 			representation_size=representation_size,
 			cls_head=cls_head,
+			regression=regression,
 		)
 
 	def forward(self, x):

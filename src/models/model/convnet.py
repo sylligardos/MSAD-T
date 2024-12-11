@@ -24,7 +24,8 @@ class ConvNet(nn.Module):
 		kernel_size=3,
 		padding=1,
 		original_dim=1,
-		num_classes=12
+		num_classes=12,
+		regression=False,
 	):
 		super(ConvNet, self).__init__()				
 		
@@ -32,6 +33,7 @@ class ConvNet(nn.Module):
 		self.kernel_size = kernel_size
 		self.padding = padding
 		self.layers = []
+		self.regression = regression
 
 		dims = [original_dim]
 		dims += list(2 ** np.arange(6, 6 + num_blocks))
@@ -51,14 +53,19 @@ class ConvNet(nn.Module):
 				
 		self.GAP = nn.AvgPool1d(original_length)
 		
-		self.fc1 = nn.Sequential(
-			nn.Linear(dims[-1], num_classes)
-		)
+		if not regression:
+			self.fc1 = nn.Sequential(
+				nn.Linear(dims[-1], num_classes)
+			)
+		else:
+			self.fc1 = nn.Sequential(
+				nn.Linear(dims[-1], 1),
+				nn.Sigmoid()
+			)
 
 		
 	def forward(self, x):
 		out = self.layers(x)
-		
 		out = self.GAP(out)
 		out = out.reshape(out.size(0), -1)
 		out = self.fc1(out)

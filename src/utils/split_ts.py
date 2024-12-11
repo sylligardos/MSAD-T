@@ -14,6 +14,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from collections import Counter
 import pandas as pd
+import math
 
 
 def split_ts(data, window_size, step=None):
@@ -99,14 +100,30 @@ def split_ts_no_overlap(data, window_size):
 
 	return np.asarray(data_split), indices
 
-def my_train_test_split(data, stratify=False, test_size=0.33, random_state=None):
+def my_train_test_split(data, stratify=False, test_size=0.33, random_state=None, split_file=None):
 	unique_index = list({'.'.join(id.rsplit('.', maxsplit=1)[:-1]) for id in data.index})
 
-	if stratify:
-		dataset_index = [id.split('/', maxsplit=1)[0] for id in unique_index]
-		train, test = train_test_split(unique_index, stratify=dataset_index, test_size=test_size, random_state=random_state)
+	if split_file:
+		split = pd.read_csv(split_file, index_col=0)
+		for set_name in ["val_set", "test_set"]:
+			if set_name in split.index:
+				test_fnames = {
+					x[:-len('.csv')] for x in split.loc[set_name].dropna().tolist()
+				}
+				break
+
+		train, test = [], []
+		for idx in unique_index:
+			if idx in test_fnames:
+				test.append(idx)
+			else:
+				train.append(idx)
 	else:
-		train, test = train_test_split(unique_index, test_size=test_size, random_state=random_state)
+		if stratify:
+			dataset_index = [id.split('/', maxsplit=1)[0] for id in unique_index]
+			train, test = train_test_split(unique_index, stratify=dataset_index, test_size=test_size, random_state=random_state)
+		else:
+			train, test = train_test_split(unique_index, test_size=test_size, random_state=random_state)
 
 	train_set = data[data.index.to_series().apply(lambda idx: '.'.join(idx.rsplit('.', maxsplit=1)[:-1]) in train)]
 	test_set = data[data.index.to_series().apply(lambda idx: '.'.join(idx.rsplit('.', maxsplit=1)[:-1]) in test)]

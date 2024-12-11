@@ -14,20 +14,26 @@ import torch.nn as nn
 
 
 class OutputLayer(nn.Module):
-	def __init__(self, 
-				embedding_dim, 
-				num_classes=12, 
-				representation_size=None,
-				cls_head=False):
+	def __init__(
+			self, 
+			embedding_dim, 
+			num_classes=12, 
+			representation_size=None,
+			cls_head=False,
+			regression=False,
+		):
 		super(OutputLayer, self).__init__()
 
 		modules = []
 		if representation_size:
 			modules.append(nn.Linear(embedding_dim, representation_size))
 			modules.append(nn.Tanh())
-			modules.append(nn.Linear(representation_size, num_classes))
+			modules.append(nn.Linear(representation_size, num_classes if not regression else 1))
 		else:
-			modules.append(nn.Linear(embedding_dim, num_classes))
+			modules.append(nn.Linear(embedding_dim, num_classes if not regression else 1))
+		
+		if regression:
+			modules.append(nn.Sigmoid())
 
 		self.net = nn.Sequential(*modules)
 
@@ -36,6 +42,7 @@ class OutputLayer(nn.Module):
 
 		self.cls_head = cls_head
 		self.num_classes = num_classes
+		self.regression = regression
 		self._init_weights()
 
 	def _init_weights(self):

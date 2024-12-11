@@ -38,7 +38,7 @@ def main():
     curr_time = log_time(f"Loading data", tic, curr_time)
     dataloader = Dataloader(
         raw_data_path='data/raw', 
-        split_file=f'data/splits/supervised/split_TSB_{window_size}.csv', 
+        split_file=f'data/splits/supervised/split_TSB.csv', 
         feature_data_path='data/features/CATCH22_TSB_128.csv'
     )
     data = dataloader.load_feature_all() if datasets is None else dataloader.load_feature_datasets(datasets)
@@ -61,7 +61,7 @@ def main():
 
     # Prepare the data for training
     curr_time = log_time("Splitting the data into subsets", tic, curr_time)
-    df_train, df_test = my_train_test_split(data, stratify=False, random_state=7)
+    df_train, df_test = my_train_test_split(data, stratify=False, split_file="data/splits/supervised/split_TSB.csv")
     y_train, x_train = df_train['label'], df_train.drop('label', axis=1)
     y_test, x_test = df_test['label'], df_test.drop('label', axis=1)
 
@@ -70,7 +70,7 @@ def main():
     models = {}
     for detector in detectors:
         models[detector] = xgboost.XGBRegressor()
-        models[detector].load_model(os.path.join("experiments", "regression_9_12_2024", "models", f"{detector}_{window_size}_reg_xgboost.json"))
+        models[detector].load_model(os.path.join("experiments", "regression_def_11_12_2024", "models", f"{detector}_{window_size}_reg_xgboost.json"))
 
     # Predict on the test set
     curr_time = log_time("Predicting the test set", tic, curr_time)

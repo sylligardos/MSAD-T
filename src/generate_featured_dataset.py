@@ -14,12 +14,21 @@ import pandas as pd
 import argparse
 import re
 import os
+from tqdm import tqdm
+from multiprocessing import Pool
 
 from sktime.transformations.panel.tsfresh import TSFreshFeatureExtractor
 from sktime.transformations.panel.catch22 import Catch22
 
 
-def generate_features(path, save_dir, feature_extractor, mode='reg'):
+def generate_features(path, save_dir, feature_extractor):
+    if 'raw' in path:
+        generate_features_raw(save_dir, feature_extractor)    
+    else:
+        generate_features_window(path, save_dir, feature_extractor)
+
+
+def generate_features_window(path, save_dir, feature_extractor):
     """TODO
 
     :param path: path to the dataset to be converted
@@ -61,6 +70,44 @@ def generate_features(path, save_dir, feature_extractor, mode='reg'):
     # Create new dataframe
     X_transformed.index = index
     X_transformed = pd.merge(labels, X_transformed, left_index=True, right_index=True)
+    
+    # Save new features
+    X_transformed.to_csv(os.path.join(save_dir, new_name))
+
+
+
+def generate_features_raw(save_dir, feature_extractor):
+    """TODO
+
+    :param path: path to the dataset to be converted
+    """
+    testing_flag = False
+
+    dataset_name = 'TSB_raw'
+    new_name = f"{feature_extractor.upper()}_{dataset_name}.csv"
+
+    # Load datasets
+    dataloader = Dataloader("data/raw")
+    datasets = dataloader.get_dataset_names() if not testing_flag else ['YAHOO']
+    timeseries, _, fnames = dataloader.load_raw_datasets(datasets, njobs=8)
+
+    # Setup the TSFresh feature extractor (too costly to use any other parameter)
+    if feature_extractor.lower() == 'tsfresh':
+        fe = TSFreshFeatureExtractor(
+            default_fc_parameters="minimal", 
+            show_warnings=False, 
+            n_jobs=-1
+        )
+    elif feature_extractor.lower() == 'catch22':
+        fe = Catch22()
+    else:
+        raise ValueError(f"Not applicable feature extractor {feature_extractor}")
+    
+    # Compute features
+    with Pool(8) as pool:
+        transformed_timeseries = list(tqdm(pool.imap(fe.fit_transform, timeseries), total=len(timeseries), desc=f"Transforming"))
+    X_transformed = pd.concat(transformed_timeseries)
+    X_transformed.index = fnames
     
     # Save new features
     X_transformed.to_csv(os.path.join(save_dir, new_name))

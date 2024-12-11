@@ -60,7 +60,7 @@ def main(curr_detector):
 
     # Prepare the data for training
     curr_time = log_time("Splitting the data into subsets", tic, curr_time)
-    df_train, df_test = my_train_test_split(data, stratify=False, random_state=7)
+    df_train, df_test = my_train_test_split(data, stratify=False, split_file="data/splits/supervised/split_TSB.csv")
     y_train, x_train = df_train['label'], df_train.drop('label', axis=1)
     y_test, x_test = df_test['label'], df_test.drop('label', axis=1)
 
@@ -115,9 +115,7 @@ def main(curr_detector):
 
     # Saving the model
     curr_time = log_time("Saving the model", tic, curr_time)
-    model.save_model(os.path.join("experiments", "regression_9_12_2024", "models", f"{curr_detector}_{window_size}_reg_xgboost.json"))
-    
-    # TODO: 1) Fix stratify
+    model.save_model(os.path.join("experiments", "regression_def_11_12_2024", "models", f"{curr_detector}_{window_size}_reg_xgboost.json"))
 
 
 if __name__ == "__main__":

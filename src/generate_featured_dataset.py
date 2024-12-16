@@ -104,7 +104,7 @@ def generate_features_raw(save_dir, feature_extractor):
         raise ValueError(f"Not applicable feature extractor {feature_extractor}")
     
     # Compute features
-    with Pool(8) as pool:
+    with Pool(24) as pool:
         transformed_timeseries = list(tqdm(pool.imap(fe.fit_transform, timeseries), total=len(timeseries), desc=f"Transforming"))
     X_transformed = pd.concat(transformed_timeseries)
     X_transformed.index = fnames

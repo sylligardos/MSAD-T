@@ -147,7 +147,7 @@ class Dataloader:
 
 		return df
 
-	def load_window_timeseries_parallel(self, dataset):
+	def load_window_timeseries_parallel(self, dataset, disable=False):
 		"""
 		Loads the time series of the given dataset in parallel and returns a dataframe.
 
@@ -170,7 +170,7 @@ class Dataloader:
 
 		# Load time series in parallel
 		with Pool() as pool:
-			results = list(tqdm(pool.imap(self.load_timeseries_file, timeseries_files), total=len(timeseries_files), desc="Loading time series"))
+			results = list(tqdm(pool.imap(self.load_timeseries_file, timeseries_files), total=len(timeseries_files), desc="Loading time series", disable=disable))
 
 		# Filter out any None results
 		df_list = [result for result in results if result is not None]
@@ -182,6 +182,20 @@ class Dataloader:
 		df = pd.concat(df_list)
 
 		return df
+	
+	def load_multiple_window_timeseries_parallel(self, datasets):
+		df_list = []
+		for dataset in tqdm(datasets, desc="Loading window time series"):
+			df_list.append(self.load_window_timeseries_parallel(dataset, disable=True))
+		return pd.concat(df_list)
+
+	def load_all_window_timeseries_parallel(self):
+		datasets = self.get_dataset_names()
+		
+		df_list = []
+		for dataset in tqdm(datasets, desc="Loading window time series"):
+			df_list.append(self.load_window_timeseries_parallel(dataset, disable=True))
+		return pd.concat(df_list)
 
 	def load_timeseries_file(self, filepath):
 		"""

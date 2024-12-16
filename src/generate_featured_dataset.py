@@ -15,10 +15,9 @@ import argparse
 import re
 import os
 from tqdm import tqdm
-from multiprocessing import Pool
+import multiprocessing
 
-from sktime.transformations.panel.tsfresh import TSFreshFeatureExtractor
-from sktime.transformations.panel.catch22 import Catch22
+from aeon.transformations.collection.feature_based import TSFresh, Catch22
 
 
 def generate_features(path, save_dir, feature_extractor):
@@ -54,7 +53,7 @@ def generate_features_window(path, save_dir, feature_extractor):
 
     # Setup the TSFresh feature extractor (too costly to use any other parameter)
     if feature_extractor.lower() == 'tsfresh':
-        fe = TSFreshFeatureExtractor(
+        fe = TSFresh(
             default_fc_parameters="minimal", 
             show_warnings=False, 
             n_jobs=-1
@@ -88,27 +87,28 @@ def generate_features_raw(save_dir, feature_extractor):
 
     # Load datasets
     dataloader = Dataloader("data/raw")
-    datasets = dataloader.get_dataset_names() if not testing_flag else ['YAHOO']
+    datasets = dataloader.get_dataset_names() if not testing_flag else ['KDD21']
     timeseries, _, fnames = dataloader.load_raw_datasets(datasets, njobs=8)
 
     # Setup the TSFresh feature extractor (too costly to use any other parameter)
     if feature_extractor.lower() == 'tsfresh':
-        fe = TSFreshFeatureExtractor(
+        fe = TSFresh(
             default_fc_parameters="minimal", 
             show_warnings=False, 
-            n_jobs=-1
+            n_jobs=int(multiprocessing.cpu_count() * 2/3),
         )
     elif feature_extractor.lower() == 'catch22':
-        fe = Catch22()
+        fe = Catch22(
+            n_jobs=int(multiprocessing.cpu_count() * 2/3),
+            use_pycatch22=True,
+        )
     else:
         raise ValueError(f"Not applicable feature extractor {feature_extractor}")
     
     # Compute features
-    with Pool(24) as pool:
-        transformed_timeseries = list(tqdm(pool.imap(fe.fit_transform, timeseries), total=len(timeseries), desc=f"Transforming"))
-    X_transformed = pd.concat(transformed_timeseries)
-    X_transformed.index = fnames
-    
+    transformed_timeseries = fe.fit_transform(timeseries)
+    X_transformed = pd.DataFrame(data=transformed_timeseries, index=fnames)
+
     # Save new features
     X_transformed.to_csv(os.path.join(save_dir, new_name))
 

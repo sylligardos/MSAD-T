@@ -7,6 +7,7 @@
 reports/
 shell_scripts/*.sh
 src/old_experiments_dont_use/
+*.keras
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

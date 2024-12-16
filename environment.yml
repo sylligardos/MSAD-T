@@ -25,6 +25,7 @@ dependencies:
   - zlib=1.2.13=h5eee18b_1
   - pip:
       - absl-py==2.1.0
+      - aeon==1.0.0
       - arch==7.2.0
       - astunparse==1.6.3
       - bokeh==3.6.1
@@ -37,6 +38,7 @@ dependencies:
       - cython==3.0.11
       - dask==2024.11.2
       - dask-expr==1.1.19
+      - deprecated==1.2.15
       - distributed==2024.11.2
       - filelock==3.16.1
       - flatbuffers==24.3.25
@@ -61,6 +63,7 @@ dependencies:
       - markupsafe==3.0.2
       - matplotlib==3.9.2
       - mdurl==0.1.2
+      - missingno==0.5.2
       - ml-dtypes==0.4.1
       - mpmath==1.3.0
       - msgpack==1.1.0
@@ -91,6 +94,7 @@ dependencies:
       - protobuf==5.28.3
       - psutil==6.1.0
       - pyarrow==18.1.0
+      - pycatch22==0.4.5
       - pygments==2.18.0
       - pyparsing==3.2.0
       - python-dateutil==2.9.0.post0

@@ -23,7 +23,7 @@ from scipy import stats
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import os
 import multiprocessing
-from aeon.utils.discovery import all_estimators
+from aeon.regression.deep_learning import FCNRegressor, InceptionTimeRegressor, ResNetRegressor
 import pickle
 import sys
 import sklearn
@@ -50,18 +50,24 @@ def create_directory(parent_dir, new_dir_name):
     return new_dir_path
 
 def get_regressor(index, model_class):
+    # aeon_regressors = [
+    #     # 'CanonicalIntervalForestRegressor', 
+    #     'FCNRegressor', 
+    #     # 'FreshPRINCERegressor', 
+    #     'InceptionTimeRegressor', 
+    #     # 'KNeighborsTimeSeriesRegressor', 
+    #     # 'MLPRegressor', 
+    #     # 'RandomIntervalRegressor', 
+    #     'ResNetRegressor', 
+    #     # 'RocketRegressor', 
+    #     # 'TimeCNNRegressor', 
+    #     # 'TimeSeriesForestRegressor'
+    # ]
+
     aeon_regressors = [
-        # 'CanonicalIntervalForestRegressor', 
-        'FCNRegressor', 
-        # 'FreshPRINCERegressor', 
-        'InceptionTimeRegressor', 
-        # 'KNeighborsTimeSeriesRegressor', 
-        # 'MLPRegressor', 
-        # 'RandomIntervalRegressor', 
-        'ResNetRegressor', 
-        # 'RocketRegressor', 
-        # 'TimeCNNRegressor', 
-        # 'TimeSeriesForestRegressor'
+        ('FCNRegressor', FCNRegressor),
+        ('InceptionTimeRegressor', InceptionTimeRegressor),
+        ('ResNetRegressor', ResNetRegressor),
     ]
 
     sklearn_regressors = [
@@ -72,13 +78,13 @@ def get_regressor(index, model_class):
     ]
 
     if model_class == 'raw':
-        curr_regressor_name = aeon_regressors[index]
-        all_aeon_regressors = all_estimators("regressor")
-        curr_regressor = [x for x in all_aeon_regressors if x[0] == curr_regressor_name][0][1]() 
+        curr_regressor_name, curr_regressor = aeon_regressors[index]
+        model_parameters = {'verbose':True, 'save_best_model':True, 'best_file_name':'best_model', 'file_path':''} 
     elif model_class == 'feature':
         curr_regressor_name, curr_regressor = sklearn_regressors[index]
+        model_parameters = None
     
-    return curr_regressor_name, curr_regressor
+    return curr_regressor_name, curr_regressor, model_parameters
 
 def log_time(msg, start_time, curr_time):
     elapsed_time = time.time() - start_time
@@ -101,7 +107,12 @@ def train_regressors(
     ):
     # Experiment setup
     curr_time = tic = time.time()
-    model_name, model = get_regressor(int(model_index), model_class)
+    model_name, model, model_parameters = get_regressor(int(model_index), model_class)
+
+    # Load the scores of all detectors
+    # scoreloader = Scoreloader('data/scores')
+    # detectors = scoreloader.get_detector_names()
+    exit()
 
     # Create subdirs (if they dont exist) and essential paths
     saving_path_split = os.path.split(saving_path)
@@ -116,10 +127,10 @@ def train_regressors(
     training_info_path = os.path.join(create_directory(saving_path, 'training_info'), experiment_name + '.csv')
     
     # Setup logger
-    if not testing:
-        log_file = open(log_file, "w")
-        sys.stdout = log_file
-        sys.stderr = log_file
+    # if not testing:
+    #     log_file = open(log_file, "w")
+    #     sys.stdout = log_file
+    #     sys.stderr = log_file
     curr_time = log_time(f'(Starting experiment) Model: {model_name}, Window size: {window_size}, Detector: {detector}, Experiment: {experiment}, Split: {split}', tic, curr_time)
 
     # Load the data features or the raw subsequences 
@@ -159,6 +170,10 @@ def train_regressors(
 
     # Train the regressor and predict the test data
     toc = time.time()
+    if model_parameters:
+        model_parameters['best_file_name'] = os.path.split(model_saving_path)[-1]
+        model_parameters['file_path'] = os.path.split(model_saving_path)[:-1][0]
+        model = model(**model_parameters)
     model.fit(x_train, y_train)
     training_time = time.time() - toc
 

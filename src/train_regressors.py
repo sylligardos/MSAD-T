@@ -5,41 +5,24 @@
 @what: MSAD-E
 """
 
-from data.scoreloader import Scoreloader
 from data.metricloader import Metricloader
 from data.dataloader import Dataloader
 from utils.split_ts import my_train_test_split
 
 import argparse
-import seaborn as sns
-import matplotlib.pyplot as plt
 import numpy as np
 import xgboost
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import time
 import pandas as pd
-from tqdm import tqdm
-from scipy import stats
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import os
-import multiprocessing
 from aeon.regression.deep_learning import FCNRegressor, InceptionTimeRegressor, ResNetRegressor
 import pickle
-import sys
 import sklearn
 
 
 def create_directory(parent_dir, new_dir_name):
-    """
-    Creates a new directory inside the specified parent directory if it doesn't already exist.
-
-    Parameters:
-        parent_dir (str): Path to the parent directory.
-        new_dir_name (str): Name of the new directory to create.
-
-    Returns:
-        str: Path to the new directory.
-    """
     new_dir_path = os.path.join(parent_dir, new_dir_name)
     
     # Check if the directory exists; if not, create it
@@ -50,20 +33,6 @@ def create_directory(parent_dir, new_dir_name):
     return new_dir_path
 
 def get_regressor(index, model_class):
-    # aeon_regressors = [
-    #     # 'CanonicalIntervalForestRegressor', 
-    #     'FCNRegressor', 
-    #     # 'FreshPRINCERegressor', 
-    #     'InceptionTimeRegressor', 
-    #     # 'KNeighborsTimeSeriesRegressor', 
-    #     # 'MLPRegressor', 
-    #     # 'RandomIntervalRegressor', 
-    #     'ResNetRegressor', 
-    #     # 'RocketRegressor', 
-    #     # 'TimeCNNRegressor', 
-    #     # 'TimeSeriesForestRegressor'
-    # ]
-
     aeon_regressors = [
         ('FCNRegressor', FCNRegressor),
         ('InceptionTimeRegressor', InceptionTimeRegressor),
@@ -112,25 +81,19 @@ def train_regressors(
     # Load the scores of all detectors
     # scoreloader = Scoreloader('data/scores')
     # detectors = scoreloader.get_detector_names()
-    exit()
 
     # Create subdirs (if they dont exist) and essential paths
     saving_path_split = os.path.split(saving_path)
     create_directory(saving_path_split[0], saving_path_split[1])
+    experiment_name = f"{model_name}_{model_class}_{window_size}_{detector}_{experiment}"
     if experiment == 'unsupervised':
-        experiment_name = f"{model_name}_{model_class}_{window_size}_{detector}_{experiment}_{split}"
-    elif experiment == 'supervised':
-        experiment_name = f"{model_name}_{model_class}_{window_size}_{detector}_{experiment}"
+        experiment_name += f"_{split}"
     model_saving_path = os.path.join(create_directory(saving_path, 'models'), experiment_name + '.json')
     log_file = os.path.join(create_directory(saving_path, 'logs'), experiment_name + '.log')
     results_path = os.path.join(create_directory(saving_path, 'results'), experiment_name + '.csv')
     training_info_path = os.path.join(create_directory(saving_path, 'training_info'), experiment_name + '.csv')
     
     # Setup logger
-    # if not testing:
-    #     log_file = open(log_file, "w")
-    #     sys.stdout = log_file
-    #     sys.stderr = log_file
     curr_time = log_time(f'(Starting experiment) Model: {model_name}, Window size: {window_size}, Detector: {detector}, Experiment: {experiment}, Split: {split}', tic, curr_time)
 
     # Load the data features or the raw subsequences 
@@ -259,36 +222,16 @@ if __name__ == "__main__":
 
 
 
-
-
 """ aeon_regressors = [
-    'CanonicalIntervalForestRegressor', 
-    'Catch22Regressor', 
-    'DisjointCNNRegressor', 
-    'DrCIFRegressor', 
-    'EncoderRegressor', 
+    # 'CanonicalIntervalForestRegressor', 
     'FCNRegressor', 
-    'FreshPRINCERegressor', 
-    'HydraRegressor', 
+    # 'FreshPRINCERegressor', 
     'InceptionTimeRegressor', 
-    'IndividualInceptionRegressor', 
-    'IndividualLITERegressor', 
-    'IntervalForestRegressor', 
-    'KNeighborsTimeSeriesRegressor', 
-    'LITETimeRegressor', 
-    'MLPRegressor', 
-    'MiniRocketRegressor', 
-    'MultiRocketHydraRegressor', 
-    'MultiRocketRegressor', 
-    'QUANTRegressor', 
-    'RDSTRegressor', 
-    'RISTRegressor', 
-    'RandomIntervalRegressor', 
-    'RandomIntervalSpectralEnsembleRegressor', 
+    # 'KNeighborsTimeSeriesRegressor', 
+    # 'MLPRegressor', 
+    # 'RandomIntervalRegressor', 
     'ResNetRegressor', 
-    'RocketRegressor', 
-    'SummaryRegressor', 
-    'TSFreshRegressor', 
-    'TimeCNNRegressor', 
-    'TimeSeriesForestRegressor'
+    # 'RocketRegressor', 
+    # 'TimeCNNRegressor', 
+    # 'TimeSeriesForestRegressor'
 ] """

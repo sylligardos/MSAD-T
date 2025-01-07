@@ -11,7 +11,7 @@ import numpy as np
 
 
 def main():
-    saving_dir = "."
+    saving_dir = "regressors"
     experiment_desc = {
         "job_name": "regressors",
         "environment": "MSAD-T",
@@ -112,6 +112,10 @@ python3 {}"""
             if isinstance(gpu_required, str) and name in gpu_required:
                 gpu_required = int(eval(gpu_required.replace(name, str(value))))
 
+        # Create saving dir if doesn't exist
+        if not os.path.exists(saving_dir):
+            os.makedirs(saving_dir)
+            
         # Write the .sh file
         with open(os.path.join(saving_dir, f'{job_name}.sh'), 'w') as rsh:
             rsh.write(sh_file_templates[gpu_required].format(job_name, environment, cmd))

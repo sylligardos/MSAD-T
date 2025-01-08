@@ -63,7 +63,7 @@ python3 {}""",
 #SBATCH --time=2:00:00          # Time limit hrs:min:sec
 
 # Activate the conda environment
-source activate {}
+conda activate {}
 
 # Run the Python script
 python3 {}""",
@@ -82,7 +82,7 @@ python3 {}""",
 #SBATCH --time=48:00:00          # Time limit hrs:min:sec
 
 # Activate the conda environment
-source activate {}
+conda activate {}
 
 # Run the Python script
 python3 {}""" 

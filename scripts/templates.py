@@ -58,9 +58,9 @@ python3 {}""",
 #SBATCH --output={}/logs/%x.log        # Standard output and error log
 #SBATCH --error={}/logs/%x.log         # Error log
 #SBATCH --ntasks=1               # Number of tasks
-#SBATCH --cpus-per-task=32        # Number of CPU cores per task
-#SBATCH --mem=32G                # Memory per node
-#SBATCH --time=48:00:00          # Time limit hrs:min:sec
+#SBATCH --cpus-per-task=16        # Number of CPU cores per task
+#SBATCH --mem=8G                # Memory per node
+#SBATCH --time=2:00:00          # Time limit hrs:min:sec
 
 # Activate the conda environment
 source activate {}

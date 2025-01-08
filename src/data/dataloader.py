@@ -33,8 +33,10 @@ class Dataloader:
 		if split_file is not None:
 			split_file = pd.read_csv(split_file, index_col=0)
 			self.train_set = list(split_file.loc['train_set'].dropna())
-			self.val_set = list(split_file.loc['val_set'].dropna())
-
+			if 'val_set' in split_file.index:
+				self.val_set = list(split_file.loc['val_set'].dropna())
+			else:
+				self.val_set = list(split_file.loc['test_set'].dropna())
 
 	def get_dataset_names(self):
 		"""

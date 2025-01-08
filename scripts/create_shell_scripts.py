@@ -8,7 +8,7 @@
 import itertools
 import os
 import numpy as np
-
+from templates import sh_templates
 
 def main():
     saving_dir = "regressors"
@@ -17,72 +17,23 @@ def main():
         "environment": "MSAD-T",
         "script_name": "src/train_regressors.py",
         "args": {
-            "model_index": [0, 1, 2],
-            "model_class": ["raw", "feature"],
+            "model_index": [0],
             "detector": ['AE', 'CNN', 'HBOS', 'IFOREST', 'IFOREST1', 'LOF', 'LSTM', 'MP', 'NORMA', 'OCSVM', 'PCA', 'POLY'],
             "window_size": [16, 32, 64, 128, 256, 512, 768, 1024],
-            "experiment": ['supervised'], #, 'unsupervised'
-            # "split": np.arange(0, 16),
-            "saving_path": ["experiments/regression_16_12_2024"],
+            "experiment": ['supervised', 'unsupervised'], 
+            "split": np.arange(0, 16),
+            "saving_path": ["experiments/regression_08_01_2025"],
         },
         "gpu_required": "1 if \"model_class\" == \"raw\" else 1"
     }
-    sh_file_templates = [
-"""#!/bin/bash
-#SBATCH --job-name={}               # Job name
-#SBATCH --output=logs/%x.log        # Standard output and error log
-#SBATCH --error=logs/%x.log         # Error log
-#SBATCH --ntasks=1                  # Number of tasks
-#SBATCH --cpus-per-task=16          # Number of CPU cores per task
-#SBATCH --time=20:00:00             # Time limit (2 hours in this case)
-#SBATCH -A gpr@cpu                  # Specify the account to use (CPU account)
-
-# go into the submission directory 
-cd ${{SLURM_SUBMIT_DIR}}
-
-# clean out the modules loaded in interactive and inherited by default
-module purge
-
-# loading the modules
-source ~/Documents/miniconda3/etc/profile.d/conda.sh
-conda activate {}
-
-# echo of launched commands
-set -x
-
-# execution
-python3 {}""",
-"""#!/bin/bash
-#SBATCH --job-name={}               # Job name
-#SBATCH --output=logs/%x.log        # Standard output and error log
-#SBATCH --error=logs/%x.log         # Error log
-#SBATCH --ntasks=1                  # Number of tasks
-#SBATCH --cpus-per-task=16          # Number of CPU cores per task
-#SBATCH --time=20:00:00             # Time limit (2 hours in this case)
-#SBATCH -A gpr@v100                 # Specify the account to use (CPU account)
-#SBATCH --gres=gpu:1                # Request 1 GPU
-
-# go into the submission directory 
-cd ${{SLURM_SUBMIT_DIR}}
-
-# clean out the modules loaded in interactive and inherited by default
-module purge
-
-# loading the modules
-source ~/Documents/miniconda3/etc/profile.d/conda.sh
-conda activate {}
-
-# echo of launched commands
-set -x
-
-# execution
-python3 {}"""
-    ]
+    template = sh_templates['cleps_cpu']
     
+        
     # Analyse json
     environment = experiment_desc["environment"]
     script_name = experiment_desc["script_name"]
     args = experiment_desc["args"]
+    args_saving_path = args['saving_path'][0]
     arg_names = list(args.keys())
     arg_values = list(args.values())
     gpu_required = experiment_desc["gpu_required"]
@@ -91,10 +42,9 @@ python3 {}"""
     combinations = list(itertools.product(*arg_values))
     
     # Create the commands
-    jobs = []
+    jobs = set()
     for combination in combinations:
         cmd = f"{script_name}"
-        gpu_required = experiment_desc["gpu_required"]
         job_name = experiment_desc["job_name"]
 
         supervised_flag = 0
@@ -118,12 +68,14 @@ python3 {}"""
             
         # Write the .sh file
         with open(os.path.join(saving_dir, f'{job_name}.sh'), 'w') as rsh:
-            rsh.write(sh_file_templates[gpu_required].format(job_name, environment, cmd))
+            rsh.write(template.format(job_name, args_saving_path, args_saving_path, environment, cmd))
         
-        jobs.append(job_name)
+        jobs.add(job_name)
 
     # Create sh file to conduct all experiments 
     run_all_sh = ""
+    jobs = list(jobs)
+    jobs.sort()
     for job in jobs:
         run_all_sh += f"sbatch {os.path.join(saving_dir, f'{job}.sh')}\n"
     

@@ -11,6 +11,7 @@ import numpy as np
 from templates import sh_templates
 
 def main():
+    current_dir = "scripts"
     saving_dir = "regressors"
     experiment_desc = {
         "job_name": "regressors",
@@ -77,7 +78,7 @@ def main():
     jobs = list(jobs)
     jobs.sort()
     for job in jobs:
-        run_all_sh += f"sbatch {os.path.join(saving_dir, f'{job}.sh')}\n"
+        run_all_sh += f"sbatch {os.path.join(current_dir, saving_dir, f'{job}.sh')}\n"
     
     with open(os.path.join(saving_dir, f'conduct_{experiment_desc["job_name"]}.sh'), 'w') as rsh:
         rsh.write(run_all_sh)

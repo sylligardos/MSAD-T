@@ -32,8 +32,6 @@ import seaborn as sns
 from collections import Counter
 import time
 import sklearn
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.svm import SVR
 import xgboost
 
 from tsb_kit.vus.metrics import get_metrics
@@ -769,10 +767,16 @@ def log_time(msg, start_time, curr_time):
     return time.time()
 
 def get_regressor(index):
+    from aeon.regression.interval_based import RandomIntervalRegressor
+    from aeon.regression.distance_based import KNeighborsTimeSeriesRegressor
+    from aeon.regression.convolution_based import MultiRocketRegressor
     regressors = [
-        ('XGBRegressor', xgboost.XGBRegressor(n_estimators=1000, max_depth=7, eta=0.1, subsample=0.7, colsample_bytree=0.8, verbosity=1), 'feature'),
+        # ('XGBRegressor', xgboost.XGBRegressor(n_estimators=1000, max_depth=7, eta=0.1, subsample=0.7, colsample_bytree=0.8, verbosity=1), 'feature'),
         ('RandomForestRegressor', sklearn.ensemble.RandomForestRegressor(), 'feature'),
         ('SupportVectorRegression', sklearn.svm.SVR(), 'feature'),
+        ('RandomIntervalRegressor', RandomIntervalRegressor(), 'raw'),
+        ('KNeighborsTimeSeriesRegressor', KNeighborsTimeSeriesRegressor(), 'raw'),
+        ('MultiRocketRegressor', MultiRocketRegressor(), 'raw'),
         # ('ConvNet', ConvNet(original_length=512, regression=True), 'raw'),
         # ('SiT', SignalTransformer(regression=True), 'raw'),
     ]

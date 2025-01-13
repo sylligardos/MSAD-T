@@ -18,10 +18,10 @@ def main():
         "environment": "MSAD-T",
         "script_name": "src/train_regressors.py",
         "args": {
-            "model_index": [0, 1, 2, 3, 4],
+            "model_index": [0, 1, 2],
             "detector": ['AE', 'CNN', 'HBOS', 'IFOREST', 'IFOREST1', 'LOF', 'LSTM', 'MP', 'NORMA', 'OCSVM', 'PCA', 'POLY'],
             "window_size": [16, 32, 64, 128, 256, 512, 768, 1024],
-            "experiment": ['supervised'], 
+            "experiment": ['supervised'],
             "split": np.arange(0, 16),
             "saving_path": ["experiments/regression_08_01_2025"],
         },

@@ -772,8 +772,8 @@ def get_regressor(index):
     from aeon.regression.convolution_based import MultiRocketRegressor
     regressors = [
         # ('XGBRegressor', xgboost.XGBRegressor(n_estimators=1000, max_depth=7, eta=0.1, subsample=0.7, colsample_bytree=0.8, verbosity=1), 'feature'),
-        ('RandomForestRegressor', sklearn.ensemble.RandomForestRegressor(), 'feature'),
-        ('SupportVectorRegression', sklearn.svm.SVR(), 'feature'),
+        # ('RandomForestRegressor', sklearn.ensemble.RandomForestRegressor(), 'feature'),
+        # ('SupportVectorRegression', sklearn.svm.SVR(), 'feature'),
         ('RandomIntervalRegressor', RandomIntervalRegressor(), 'raw'),
         ('KNeighborsTimeSeriesRegressor', KNeighborsTimeSeriesRegressor(), 'raw'),
         ('MultiRocketRegressor', MultiRocketRegressor(), 'raw'),

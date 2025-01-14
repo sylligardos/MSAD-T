@@ -15,7 +15,7 @@ def main():
     saving_dir = "regressors"
     experiment_desc = {
         "job_name": "regressors",
-        "environment": "MSAD-T",
+        "environment": "msadt",
         "script_name": "src/train_regressors.py",
         "args": {
             "model_index": [0, 1, 2],

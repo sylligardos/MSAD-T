@@ -2,10 +2,10 @@ sh_templates = {
 "jz_cpu": 
 """#!/bin/bash
 #SBATCH --job-name={}               # Job name
-#SBATCH --output={}/logs/%x.log        # Standard output and error log
-#SBATCH --error={}/logs/%x.log         # Error log
+#SBATCH --output={}/logs/%x.log     # Standard output and error log
+#SBATCH --error={}/logs/%x.log      # Error log
 #SBATCH --ntasks=1                  # Number of tasks
-#SBATCH --cpus-per-task=16          # Number of CPU cores per task
+#SBATCH --cpus-per-task=32          # Number of CPU cores per task
 #SBATCH --time=20:00:00             # Time limit
 #SBATCH -A gpr@cpu                  # Specify the account to use
 

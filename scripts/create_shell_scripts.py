@@ -27,7 +27,7 @@ def main():
         },
         "gpu_required": "1 if \"model_class\" == \"raw\" else 1"
     }
-    template = sh_templates['cleps_cpu']
+    template = sh_templates['jz_cpu']
     
         
     # Analyse json

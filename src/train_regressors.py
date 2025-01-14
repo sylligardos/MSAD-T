@@ -5,8 +5,9 @@
 @what: MSAD-E
 """
 
-from data.metricloader import Metricloader
 from data.dataloader import Dataloader
+from data.metricloader import Metricloader
+from data.scoreloader import Scoreloader
 from utils.split_ts import my_train_test_split
 from utils.utils import create_directory, log_time, get_regressor
 
@@ -137,15 +138,21 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
 
-    train_regressors(
-        model_index=args.model_index,
-        detector=args.detector,
-        window_size=args.window_size,
-        experiment=args.experiment,
-        split=args.split,
-        saving_path=args.saving_path,
-        testing=args.testing,
-    )
+    if args.detector == 'all':
+        args.detector = Scoreloader('data/scores').get_detector_names()
+    else:
+        args.detector = [args.detector]
+
+    for detector in args.detector: 
+        train_regressors(
+            model_index=args.model_index,
+            detector=detector,
+            window_size=args.window_size,
+            experiment=args.experiment,
+            split=args.split,
+            saving_path=args.saving_path,
+            testing=args.testing,
+        )
 
 
 

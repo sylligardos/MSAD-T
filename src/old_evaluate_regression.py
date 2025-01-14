@@ -70,7 +70,7 @@ def main():
     models = {}
     for detector in detectors:
         models[detector] = xgboost.XGBRegressor()
-        models[detector].load_model(os.path.join("experiments", "regression_def_11_12_2024", "models", f"{detector}_{window_size}_reg_xgboost.json"))
+        models[detector].load_model(os.path.join("experiments", "xgboost_11_12_2024", "models", f"{detector}_{window_size}_reg_xgboost.json"))
 
     # Predict on the test set
     curr_time = log_time("Predicting the test set", tic, curr_time)

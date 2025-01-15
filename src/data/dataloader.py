@@ -49,7 +49,21 @@ class Dataloader:
 		names = os.listdir(self.raw_data_path)
 
 		return [x for x in names if os.path.isdir(os.path.join(self.raw_data_path, x))]
-		
+	
+
+	def load_timeseries_parallel(self, filenames):
+		timeseries = []
+		labels = []
+		fnames = []
+
+		with Pool() as pool:
+			results = list(tqdm(pool.imap(self.load_timeseries, filenames), total=len(filenames), desc='Loading data'))
+
+		timeseries, labels, fnames = zip(*results)
+			
+		return list(timeseries), list(labels), list(fnames)
+
+
 	def load_timeseries(self, filename):
 		"""
 		Load a single time series file.
@@ -60,7 +74,8 @@ class Dataloader:
 		Returns:
 			tuple: A tuple containing the time series data and the filename.
 		"""
-		data = pd.read_csv(filename, header=None).to_numpy()
+		path = os.path.join(self.raw_data_path, filename) if self.raw_data_path not in filename else filename
+		data = pd.read_csv(path, header=None).to_numpy()
 		if data.ndim != 2:
 			raise ValueError(f"Unexpected shape of data: '{filename}', {data.shape}")
 		

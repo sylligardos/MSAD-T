@@ -7,28 +7,32 @@ import random
 from tqdm import tqdm
 from collections import Counter
 
+from data.dataloader import Dataloader
 from data.scoreloader import Scoreloader
 from data.metricloader import Metricloader
 from combine_detectors import combine_detectors
 
 
 def eval_regressors():
-    results_path = os.path.join('experiments', 'xgbregressors_13_01_2025', 'results')
+    metric = 'VUS-PR'
+    results_path = os.path.join('experiments', 'regression_08_01_2025', 'results')
 
     result_files = [file for file in os.listdir(results_path) if file.endswith('.csv')]
     supervised_files = [file for file in result_files if "_supervised" in file]
     unsupervised_files = [file for file in result_files if "_unsupervised_" in file]
 
+    dataloader = Dataloader('data/raw')
+
     scoreloader = Scoreloader('data/scores')
     detectors = scoreloader.get_detector_names()
 
     metricloader = Metricloader('data/metrics')
-    metrics_df = metricloader.read("VUS_PR")
+    metrics_df = metricloader.read(metric.replace('-', '_'))
     detectors_df = metrics_df[detectors]
 
     # Load supervised results
     supervised_results_list = []
-    supervised_files = [file for file in supervised_files if ('XGBRegressor' in file)]  # Test
+    supervised_files = [file for file in supervised_files if ('RandomIntervalRegressor' in file)]  # Test
     for file in tqdm(supervised_files):
         parts = file.split('_')
         if len(parts) != 5:
@@ -63,23 +67,28 @@ def eval_regressors():
         values='y_pred',
     ).reset_index()
     curr_piv_df['Selected detector'] = curr_piv_df[detectors].idxmax(axis=1)
-    curr_piv_df['Selected VUS-PR'] = curr_piv_df.apply(lambda row: detectors_df.loc[row['Time series']][row['Selected detector']], axis=1)
+    curr_piv_df[f'Selected {metric}'] = curr_piv_df.apply(lambda row: detectors_df.loc[row['Time series']][row['Selected detector']], axis=1)
     curr_piv_df['Oracle'] = curr_piv_df.apply(lambda row: detectors_df.loc[row['Time series']].max(), axis=1)
     curr_piv_df['Dataset'] = curr_piv_df['Time series'].apply(lambda idx: idx.split('/', maxsplit=1)[0])
-    # curr_df_melted = curr_piv_df[['Selected VUS-PR', 'Oracle']].melt(var_name='Metric', value_name='Value')
+        
+    # scores, idx_failed = scoreloader.load_parallel(curr_piv_df['Time series'].unique())
+    # scores = dict(zip(curr_piv_df['Time series'].unique(), scores))
     
-    scores = scoreloader.load_parallel(curr_piv_df['Time series'].unique())
-    print(scores)
-    exit()
-    combine_detectors(curr_piv_df)
-    exit()
+    # _, labels, fnames = dataloader.load_timeseries_parallel(curr_piv_df['Time series'].unique())
+    # labels = dict(zip(fnames, labels))
+
+    # new_df = combine_detectors(curr_piv_df[curr_piv_df['Time series'].isin(fnames)], scores, labels, detectors)
+    # print(new_df)
+    # exit()
+    # curr_piv_df = new_df
 
     print(curr_piv_df)
-    order = curr_piv_df.groupby('Model name')['Selected VUS-PR'].median().sort_values().index
+    order = curr_piv_df.groupby('Model name')[f'Selected {metric}'].median().sort_values().index
     curr_piv_df['Model name'] = pd.Categorical(curr_piv_df['Model name'], categories=order, ordered=True)
     plt.figure(figsize=(6, 10))
-    sns.boxplot(data=curr_piv_df, y='Selected VUS-PR', showmeans=True, x='Model name', whis=0.241289844, showfliers=False)
-    sns.boxplot(data=curr_piv_df, y='Oracle', showmeans=True, whis=0.241289844, showfliers=False)
+    sns.boxplot(data=curr_piv_df, y=f'Selected {metric}', showmeans=True, x='Model name', whis=0.241289844, showfliers=False)
+    # sns.boxplot(data=curr_piv_df, y=f'k=4', showmeans=True, whis=0.241289844, showfliers=False)
+    # sns.boxplot(data=curr_piv_df, y='Oracle', showmeans=True, whis=0.241289844, showfliers=False)
     plt.yticks(np.linspace(0, 1, num=11))
     plt.xticks(rotation=45)
     plt.grid(axis='y')

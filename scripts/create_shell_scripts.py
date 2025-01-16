@@ -31,7 +31,7 @@ def main():
         "environment": "msadt",
         "script_name": "src/regressors_proof.py",
         "args": {
-            "dataset": ['SVDB', 'Genesis', 'GHL', 'SensorScope', 'ECG', 'OPPORTUNITY', 'SMD', 'KDD21', 'Daphnet', 'NAB', 'YAHOO', 'Dodgers', 'MITDB', 'IOPS', 'Occupancy', 'MGAB'],
+            "dataset": ['all'],#['SVDB', 'Genesis', 'GHL', 'SensorScope', 'ECG', 'OPPORTUNITY', 'SMD', 'KDD21', 'Daphnet', 'NAB', 'YAHOO', 'Dodgers', 'MITDB', 'IOPS', 'Occupancy', 'MGAB'],
             "saving_path": ["experiments/regressors_proof_16_01_2025"],
         },
         "gpu_required": "0"

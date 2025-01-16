@@ -153,19 +153,3 @@ if __name__ == "__main__":
             saving_path=args.saving_path,
             testing=args.testing,
         )
-
-
-
-""" aeon_regressors = [
-    # 'CanonicalIntervalForestRegressor', 
-    'FCNRegressor', 
-    # 'FreshPRINCERegressor', 
-    'InceptionTimeRegressor', 
-    # 'KNeighborsTimeSeriesRegressor', 
-    # 'MLPRegressor', 
-    # 'RandomIntervalRegressor', 
-    'ResNetRegressor', 
-    # 'RocketRegressor', 
-    # 'TimeCNNRegressor', 
-    # 'TimeSeriesForestRegressor'
-] """

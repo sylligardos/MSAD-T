@@ -12,25 +12,34 @@ from templates import sh_templates
 
 def main():
     current_dir = "scripts"
-    saving_dir = "regressors"
+    # experiment_desc = {
+    #     "job_name": "regressors",
+    #     "environment": "msadt",
+    #     "script_name": "src/train_regressors.py",
+    #     "args": {
+    #         "model_index": [0, 1, 2],
+    #         "detector": ['AE', 'CNN', 'HBOS', 'IFOREST', 'IFOREST1', 'LOF', 'LSTM', 'MP', 'NORMA', 'OCSVM', 'PCA', 'POLY'],
+    #         "window_size": [16, 32, 64, 128, 256, 512, 768, 1024],
+    #         "experiment": ['supervised'],
+    #         "split": np.arange(0, 16),
+    #         "saving_path": ["experiments/regression_08_01_2025"],
+    #     },
+    #     "gpu_required": "1 if \"model_class\" == \"raw\" else 1"
+    # }
     experiment_desc = {
-        "job_name": "regressors",
+        "job_name": "regressors_proof",
         "environment": "msadt",
-        "script_name": "src/train_regressors.py",
+        "script_name": "src/regressors_proof.py",
         "args": {
-            "model_index": [0, 1, 2],
-            "detector": ['AE', 'CNN', 'HBOS', 'IFOREST', 'IFOREST1', 'LOF', 'LSTM', 'MP', 'NORMA', 'OCSVM', 'PCA', 'POLY'],
-            "window_size": [16, 32, 64, 128, 256, 512, 768, 1024],
-            "experiment": ['supervised'],
-            "split": np.arange(0, 16),
-            "saving_path": ["experiments/regression_08_01_2025"],
+            "datasets": ['SVDB', 'Genesis', 'GHL', 'SensorScope', 'ECG', 'OPPORTUNITY', 'SMD', 'KDD21', 'Daphnet', 'NAB', 'YAHOO', 'Dodgers', 'MITDB', 'IOPS', 'Occupancy', 'MGAB'],
+            "saving_path": ["experiments/regressors_proof_16_01_2025"],
         },
-        "gpu_required": "1 if \"model_class\" == \"raw\" else 1"
+        "gpu_required": "0"
     }
-    template = sh_templates['jz_cpu']
+    template = sh_templates['cleps_cpu']
     
-        
     # Analyse json
+    saving_dir = experiment_desc['job_name']
     environment = experiment_desc["environment"]
     script_name = experiment_desc["script_name"]
     args = experiment_desc["args"]

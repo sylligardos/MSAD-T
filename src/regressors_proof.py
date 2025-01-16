@@ -67,8 +67,8 @@ if __name__ == "__main__":
         prog='regressors_proof',
         description='Prove whether combining detectors with regressors could work'
     )
-    parser.add_argument('-d', '--dataset_index', type=str, help='index of the dataset to process (from 0 to 16)', required=True)
+    parser.add_argument('-d', '--dataset', type=str, help='index of the dataset to process (from 0 to 16)', required=True)
     parser.add_argument('-p', '--saving_path', type=str, help='where to save the results of the experiment', required=True)
 
     args = parser.parse_args()
-    regressors_proof(dataset=args.dataset_index, saving_path=args.saving_path)
+    regressors_proof(dataset=args.dataset, saving_path=args.saving_path)

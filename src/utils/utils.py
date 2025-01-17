@@ -33,6 +33,7 @@ from collections import Counter
 import time
 import sklearn
 import xgboost
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 from tsb_kit.vus.metrics import get_metrics
 from multiprocessing import Pool
@@ -771,7 +772,8 @@ def get_regressor(index):
     from aeon.regression.distance_based import KNeighborsTimeSeriesRegressor
     from aeon.regression.convolution_based import MultiRocketRegressor
     regressors = [
-        # ('XGBRegressor', xgboost.XGBRegressor(n_estimators=1000, max_depth=7, eta=0.1, subsample=0.7, colsample_bytree=0.8, verbosity=1), 'feature'),
+        # ('XGBRegressor', xgboost.XGBRegressor(n_estimators=1000, max_depth=7, eta=0.1, subsample=0.7, colsample_bytree=0.8, early_stopping_rounds=10, verbosity=1), 'feature'),
+        ('XGBRegressor', xgboost.XGBRegressor(**{'booster': 'dart', 'colsample_bytree': 0.5, 'learning_rate': 0.01, 'max_depth': 7, 'n_estimators': 300, 'subsample': 1.0, 'tree_method': 'hist'}, early_stopping_rounds=10), 'feature'),
         # ('RandomForestRegressor', sklearn.ensemble.RandomForestRegressor(), 'feature'),
         # ('SupportVectorRegression', sklearn.svm.SVR(), 'feature'),
         ('RandomIntervalRegressor', RandomIntervalRegressor(), 'raw'),
@@ -783,3 +785,10 @@ def get_regressor(index):
     model_name, model, model_class = regressors[index]
     
     return model_name, model, model_class
+
+def regression_metrics(labels, preds):
+    mae = mean_absolute_error(labels, preds)
+    mse = mean_squared_error(labels, preds)
+    r2 = r2_score(labels, preds)
+
+    return mae, mse, r2

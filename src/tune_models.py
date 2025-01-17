@@ -18,10 +18,11 @@ import pandas as pd
 import os
 import pickle
 from sklearn.model_selection import train_test_split
+import xgboost
+from skopt import BayesSearchCV
 
 
-def train_regressors(
-        model_index,
+def tune_models(
         detector,
         window_size,
         experiment,
@@ -31,7 +32,7 @@ def train_regressors(
     ):
     # Experiment setup
     curr_time = tic = time.time()
-    model_name, model, model_class = get_regressor(int(model_index))
+    model_name, model_class = 'XGBRegressors', 'feature'
 
     experiment_name = f"{model_name}_{model_class}_{window_size}_{detector}_{experiment}"
     if experiment == 'unsupervised':
@@ -50,7 +51,7 @@ def train_regressors(
     datasets = ['YAHOO'] if testing else None
     split_file = f'data/splits/{experiment}/' + ('split_TSB' if split is None else f'unsupervised_testsize_1_split_{split}') + '.csv'
     dataloader = Dataloader(
-        raw_data_path='data/raw', 
+        raw_data_path='data/raw',
         split_file=split_file,
         feature_data_path=f'data/features/CATCH22_TSB_{window_size}.csv',
         window_data_path=f'data/TSB_{window_size}',
@@ -72,17 +73,45 @@ def train_regressors(
         df['label'] = np.array([labels_df.loc[x] for x in (df.index if window_size == 'entire' else ['.'.join(id.rsplit('.', maxsplit=1)[:-1]) for id in df.index])])
     y_train, x_train = df_train['label'].values, df_train.drop('label', axis=1).values
     y_test, x_test = df_test['label'].values, df_test.drop('label', axis=1).values
-    x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.33)
     
-    # Train and evaluate the regressor
-    curr_time = log_time(f"Training", tic, curr_time)
+    curr_time = log_time(f"HP tuning", tic, curr_time)
     toc = time.time()
-    model.fit(x_train, y_train, eval_set=[(x_train, y_train), (x_val, y_val)], verbose=True)
-    training_time = time.time() - toc
+    model = xgboost.XGBRegressor()
 
-    y_val_pred = model.predict(x_val)
-    mae, mse, r2 = regression_metrics(y_val, y_val_pred)
-    curr_time = log_time(f"Validation Metrics: MAE = {mae:.3f}, MSE: {mse:.3f}, R^2: {r2:.3f}", tic, curr_time)
+    param_grid = {
+        'booster': ['gbtree', 'dart'],  # Booster type
+        'learning_rate': [0.01, 0.1, 0.2],  # Learning rate
+        'gamma': [0, 0.1, 0.2, 0.5, 1],  # Minimum loss reduction to make a split
+        'max_depth': [3, 5, 7, 9, 11],  # Maximum tree depth
+        'reg_alpha': [0, 10, 50, 100, 150],  # L1 regularization term
+        'reg_lambda': [0, 0.1, 0.5, 1],  # L2 regularization term
+        'colsample_bytree': [0.5, 0.8, 1.0],  # Column sampling for tree building
+        'min_child_weight': [1, 2, 5, 10],  # Minimum sum of instance weights for a leaf node
+        'n_estimators': [100, 300, 500, 750, 1000, 1500],  # Number of trees
+        'subsample': [0.5, 0.8, 1.0],  # Subsampling of training instances
+        'tree_method': ['exact', 'approx', 'hist']  # Tree construction algorithm
+    }
+    
+    bayes_search = BayesSearchCV(
+        estimator=model,
+        n_iter=100,
+        search_spaces=param_grid,
+        scoring='r2',
+        cv=5,
+        verbose=3,
+        return_train_score=True,
+        n_jobs=-1
+    )
+    toc = time.time()
+    bayes_search.fit(x_train, y_train, verbose=False)
+    tuning_time = time.time() - toc
+
+    model = bayes_search.best_estimator_
+    best_params = dict(bayes_search.best_params_)
+
+    # Best parameters and score
+    print("Best parameters:", best_params)
+    print("Best score:", bayes_search.best_score_)  
 
     toc = time.time()
     y_pred = model.predict(x_test)
@@ -91,14 +120,10 @@ def train_regressors(
     mae, mse, r2 = regression_metrics(y_test, y_pred)
     curr_time = log_time(f"Evaluation Metrics: MAE = {mae:.3f}, MSE: {mse:.3f}, R^2: {r2:.3f}", tic, curr_time)
     
-    # Save the model and the results and training info (e.g. convnet_aeon_128_NORMA_supervised)
     with open(model_saving_path, 'wb') as f:
         pickle.dump(model, f)
     
-    results_df = pd.DataFrame(
-        data={'label': y_test, 'y_pred': y_pred},
-        index=df_test.index
-    )
+    results_df = pd.DataFrame([best_params])
     results_df.to_csv(results_path, index=True)
 
     metrics_df = pd.DataFrame({
@@ -108,7 +133,7 @@ def train_regressors(
         'detector': detector,
         'experiment': experiment,
         'split': split, 
-        'training_time': [training_time],
+        'tuning_time': [tuning_time],
         'inference_time': [inference_time],
         'train_size': [x_train.shape],
         'test_size': [x_test.shape],
@@ -129,7 +154,6 @@ if __name__ == "__main__":
         prog='train_regressors',
         description='Train any available regression model'
     )
-    parser.add_argument('-m', '--model_index', type=str, help='index of the model architecture to train (from 0 to 28)', required=True)
     parser.add_argument('-d', '--detector', type=str, help='The detector\'s values you want to predict', required=True)
     parser.add_argument('-w', '--window_size', type=str, help='The size of the input subsequences', required=True)
     parser.add_argument('-e', '--experiment', type=str, help='Type of experiment (supervised or unsupervised)', required=True)
@@ -145,8 +169,7 @@ if __name__ == "__main__":
         args.detector = [args.detector]
 
     for detector in args.detector: 
-        train_regressors(
-            model_index=args.model_index,
+        tune_models(
             detector=detector,
             window_size=args.window_size,
             experiment=args.experiment,

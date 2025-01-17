@@ -15,7 +15,7 @@ from combine_detectors import combine_detectors
 
 def eval_regressors():
     metric = 'VUS-PR'
-    results_path = os.path.join('experiments', 'regression_08_01_2025', 'results')
+    results_path = os.path.join('experiments', 'xgbregressors_17_01_2025', 'results')
 
     result_files = [file for file in os.listdir(results_path) if file.endswith('.csv')]
     supervised_files = [file for file in result_files if "_supervised" in file]
@@ -32,7 +32,7 @@ def eval_regressors():
 
     # Load supervised results
     supervised_results_list = []
-    supervised_files = [file for file in supervised_files if ('RandomIntervalRegressor' in file)]  # Test
+    supervised_files = [file for file in supervised_files]  # Test  if ('RandomIntervalRegressor' in file)
     for file in tqdm(supervised_files):
         parts = file.split('_')
         if len(parts) != 5:
